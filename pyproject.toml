@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantdesk"
+version = "0.1.0"
+description = "Research-first systematic trading workspace"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "pandas",
+  "numpy",
+  "pydantic>=2",
+  "pydantic-settings",
+  "backtesting.py",
+  "vectorbt",
+  "quantstats",
+  "ib_async",
+  "anthropic",
+  "typer",
+  "yfinance",
+  "pyarrow",
+  "backtrader",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "pytest-mock",
+  "ruff",
+  "black",
+  "mypy",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"

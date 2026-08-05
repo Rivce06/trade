@@ -1,0 +1,20 @@
+# Environment and secrets
+.env
+.env.local
+
+# Runtime output paths
+cache/
+data/cache/
+reports/runs/
+execution/staged/
+control/
+
+# Notebook and Python caches
+.ipynb_checkpoints/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# OS/editor noise
+.DS_Store
