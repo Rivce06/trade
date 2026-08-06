@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+config/__init__.py
+config/settings.py
+quantdesk.egg-info/PKG-INFO
+quantdesk.egg-info/SOURCES.txt
+quantdesk.egg-info/dependency_links.txt
+quantdesk.egg-info/requires.txt
+quantdesk.egg-info/top_level.txt
+tests/test_settings.py

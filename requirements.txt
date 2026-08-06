@@ -1,0 +1,18 @@
+"""
+Moving Average Crossover Strategy with Risk Management
+--------------------------------------------------------
+- Fast MA crosses above Slow MA -> Buy
+- Fast MA crosses below Slow MA -> Sell / Close
+- Risk per trade: 1% of account equity
+- Daily loss limit: stop trading after 3 consecutive losses OR
+  after losing more than 3% of account equity in a day
+
+Requirements:
+    pip install backtrader yfinance
+
+Usage:
+    python ma_crossover_strategy.py
+
+pip install matplotlib
+pip install quantstats --break-system-packages
+"""
