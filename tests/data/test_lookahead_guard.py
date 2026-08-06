@@ -8,7 +8,7 @@ from data.providers.yfinance_provider import YFinanceProvider
 
 
 class GuardedYFinanceClient:
-    def download(self, ticker: str, start: str, end: str, interval: str = "1d") -> pd.DataFrame:
+    def download(self, tickers: str, start: str, end: str, interval: str = "1d") -> pd.DataFrame:
         idx = pd.date_range(start=start, end=end, freq="D", name="date")
         data = pd.DataFrame(
             {

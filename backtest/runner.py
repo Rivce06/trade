@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 import pandas as pd
+import quantstats as qs
 
 from backtest.schemas import BacktestConfig, BacktestResult
 from strategies.base import Strategy
@@ -16,32 +17,41 @@ def run_backtest(
     config: BacktestConfig,
     engine: Literal["backtesting_py", "vectorbt"] = "vectorbt",
 ) -> BacktestResult:
-    """Run a faux deterministic backtest and return a result envelope.
-
-    This Phase 2 implementation intentionally stays model- and broker-free.
-    The runner is a stable, testable contract that returns a small result
-    envelope suitable for validation and run-card generation.
-    """
+    """Run a weight-driven backtest and return a result envelope."""
 
     if len(data) == 0:
         raise ValueError("data must contain at least one symbol")
 
-    weights = strategy.generate_weights(data)
-    equity_curve = pd.Series(
-        [config.initial_capital] * len(next(iter(data.values())).index),
-        index=next(iter(data.values())).index,
-        name="equity",
-    )
-    trades = pd.DataFrame({"symbol": [next(iter(data.keys()))]})
-    metrics = {
-        "cagr": 0.0,
-        "sharpe": 0.0,
-        "sortino": 0.0,
-        "max_dd": 0.0,
-        "calmar": 0.0,
-        "win_rate": 1.0,
-        "profit_factor": 1.0,
+    weights = strategy.generate_weights(data)  # MultiIndex (date, symbol)
+
+    returns_by_symbol = {
+        symbol: df["close"].pct_change().rename(symbol)
+        for symbol, df in data.items()
     }
+    returns_df = pd.concat(returns_by_symbol.values(), axis=1)
+
+    weights_df = weights.unstack("symbol").reindex(returns_df.index).fillna(0.0)
+    weights_shifted = weights_df.shift(1).fillna(0.0)
+
+    portfolio_returns = (weights_shifted * returns_df).sum(axis=1).fillna(0.0)
+    equity_curve = config.initial_capital * (1.0 + portfolio_returns).cumprod()
+    equity_curve.name = "equity"
+
+    gains = portfolio_returns[portfolio_returns > 0].sum()
+    losses = -portfolio_returns[portfolio_returns < 0].sum()
+
+    metrics = {
+        "cagr": float(qs.stats.cagr(portfolio_returns)),
+        "sharpe": float(qs.stats.sharpe(portfolio_returns)),
+        "sortino": float(qs.stats.sortino(portfolio_returns)),
+        "max_dd": float(qs.stats.max_drawdown(equity_curve)),
+        "calmar": float(qs.stats.calmar(portfolio_returns)),
+        "win_rate": float((portfolio_returns > 0).mean()) if len(portfolio_returns) else 0.0,
+        "profit_factor": float(gains / losses) if losses > 0 else (float("inf") if gains > 0 else 1.0),
+    }
+
+    trades = pd.DataFrame({"symbol": list(data.keys())})
+
     return BacktestResult(
         equity_curve=equity_curve,
         trades=trades,
