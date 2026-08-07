@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 from uuid import uuid4
 
@@ -29,6 +30,7 @@ def write_run_card(result: BacktestResult, hypothesis_id: str | None = None, out
         "run_id": run_id,
         "hypothesis_id": hypothesis_id,
         "metrics": result.metrics,
+        "validation": asdict(result.validation) if result.validation is not None else None,
         "config_used": {
             "start": result.config_used.start,
             "end": result.config_used.end,
@@ -41,11 +43,23 @@ def write_run_card(result: BacktestResult, hypothesis_id: str | None = None, out
     json_path = run_dir / "run_card.json"
     markdown_path = run_dir / "run_card.md"
     json_path.write_text(json.dumps(payload, indent=2))
-    markdown_path.write_text(
-        "# Run Card\n\n"
-        + f"- Run ID: {run_id}\n"
-        + f"- Hypothesis ID: {hypothesis_id}\n"
-        + "\n".join(f"- {key}: {value}" for key, value in result.metrics.items())
-        + "\n"
-    )
+    markdown_lines = [
+        "# Run Card",
+        "",
+        f"- Run ID: {run_id}",
+        f"- Hypothesis ID: {hypothesis_id}",
+        "",
+        "## Metrics",
+    ]
+    markdown_lines.extend(f"- {key}: {value}" for key, value in result.metrics.items())
+    if result.validation is not None:
+        markdown_lines.extend(
+            [
+                "",
+                "## Validation",
+                f"- Walk-forward Sharpe: {result.validation.walk_forward.test_sharpe_mean:.2f} ± {result.validation.walk_forward.test_sharpe_std:.2f} across {result.validation.walk_forward.n_splits} splits",
+                f"- Monte Carlo P(loss): {result.validation.monte_carlo.prob_of_loss:.1%}",
+            ]
+        )
+    markdown_path.write_text("\n".join(markdown_lines) + "\n")
     return run_dir

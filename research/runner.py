@@ -17,9 +17,7 @@ import quantstats as qs
 from backtest.run_card import write_run_card
 from backtest.runner import run_backtest
 from backtest.schemas import BacktestConfig, BacktestResult
-from backtest.validation.monte_carlo import monte_carlo_resample
-from backtest.validation.regime import segment_by_regime
-from backtest.validation.walk_forward import walk_forward_split
+from backtest.validation.summarize import summarize_validation
 from data.providers.base import DataProvider
 from research.optimizer import OptimizationRunResult, StrategyOptimizer
 from risk.pretrade_check import pretrade_check
@@ -85,6 +83,10 @@ class ResearchRunner:
         run_dir: Path,
         start: date,
         end: date,
+        n_splits: int = 4,
+        train_ratio: float = 0.5,
+        n_sims: int = 100,
+        seed: int = 7,
     ) -> StrategyReportResult:
         if strategy_name not in STRATEGY_REGISTRY:
             raise ValueError(f"unknown strategy: {strategy_name}")
@@ -104,18 +106,25 @@ class ResearchRunner:
 
         config = self._build_config(start=start, end=end)
         backtest = run_backtest(strategy=strategy, data=data, config=config)
-
-        walk_forward = walk_forward_split(
-            data[next(iter(data.keys()))],
-            n_splits=1,
-            train_ratio=0.5,
+        portfolio_returns = backtest.equity_curve.pct_change().dropna()
+        validation = summarize_validation(
+            strategy=strategy,
+            data=data,
+            config=config,
+            portfolio_returns=portfolio_returns,
+            initial_capital=config.initial_capital,
+            n_splits=n_splits,
+            train_ratio=train_ratio,
+            n_sims=n_sims,
+            seed=seed,
         )
-        _ = walk_forward
-        regime = segment_by_regime(data[next(iter(data.keys()))], method="realized_vol")
-        _ = regime
-        trade_returns = backtest.equity_curve.pct_change().dropna()
-        monte_carlo = monte_carlo_resample(trade_returns, n_sims=10, seed=7)
-        _ = monte_carlo
+        backtest = BacktestResult(
+            equity_curve=backtest.equity_curve,
+            trades=backtest.trades,
+            metrics=backtest.metrics,
+            config_used=backtest.config_used,
+            validation=validation,
+        )
 
         strategy_dir = run_dir / strategy_name
         strategy_dir.mkdir(parents=True, exist_ok=True)
@@ -141,6 +150,10 @@ class ResearchRunner:
         start: date,
         end: date,
         mandate: Mandate | None = None,
+        n_splits: int = 4,
+        train_ratio: float = 0.5,
+        n_sims: int = 100,
+        seed: int = 7,
     ) -> ResearchRunResult:
         """Execute a deterministic research workflow and persist all artifacts."""
 
@@ -169,18 +182,25 @@ class ResearchRunner:
 
         config = self._build_config(start=start, end=end)
         backtest = run_backtest(strategy=strategy, data=data, config=config)
-
-        walk_forward = walk_forward_split(
-            data[next(iter(data.keys()))],
-            n_splits=1,
-            train_ratio=0.5,
+        portfolio_returns = backtest.equity_curve.pct_change().dropna()
+        validation = summarize_validation(
+            strategy=strategy,
+            data=data,
+            config=config,
+            portfolio_returns=portfolio_returns,
+            initial_capital=config.initial_capital,
+            n_splits=n_splits,
+            train_ratio=train_ratio,
+            n_sims=n_sims,
+            seed=seed,
         )
-        _ = walk_forward
-        regime = segment_by_regime(data[next(iter(data.keys()))], method="realized_vol")
-        _ = regime
-        trade_returns = backtest.equity_curve.pct_change().dropna()
-        monte_carlo = monte_carlo_resample(trade_returns, n_sims=10, seed=7)
-        _ = monte_carlo
+        backtest = BacktestResult(
+            equity_curve=backtest.equity_curve,
+            trades=backtest.trades,
+            metrics=backtest.metrics,
+            config_used=backtest.config_used,
+            validation=validation,
+        )
 
         tear_sheet_path = run_dir / f"tearsheet_{symbols[0]}.html"
         qs.reports.html(
@@ -201,6 +221,10 @@ class ResearchRunner:
         symbols: list[str],
         start: date,
         end: date,
+        n_splits: int = 4,
+        train_ratio: float = 0.5,
+        n_sims: int = 100,
+        seed: int = 7,
     ) -> ResearchReportResult:
         """Generate a complete research artifact bundle for every registered baseline strategy."""
 
@@ -222,6 +246,10 @@ class ResearchRunner:
                     run_dir=run_dir,
                     start=start,
                     end=end,
+                    n_splits=n_splits,
+                    train_ratio=train_ratio,
+                    n_sims=n_sims,
+                    seed=seed,
                 )
             )
 
@@ -304,9 +332,22 @@ def run_research(
     end: date,
     provider: DataProvider | None = None,
     report_base_dir: str | Path = "reports/runs",
+    n_splits: int = 4,
+    train_ratio: float = 0.5,
+    n_sims: int = 100,
+    seed: int = 7,
 ) -> ResearchRunResult:
     """Convenience wrapper for a deterministic end-to-end research run."""
 
     provider = provider or __import__("data.providers.yfinance_provider", fromlist=["YFinanceProvider"]).YFinanceProvider()
     runner = ResearchRunner(provider=provider, report_base_dir=report_base_dir)
-    return runner.run(strategy_name=strategy_name, symbols=symbols, start=start, end=end)
+    return runner.run(
+        strategy_name=strategy_name,
+        symbols=symbols,
+        start=start,
+        end=end,
+        n_splits=n_splits,
+        train_ratio=train_ratio,
+        n_sims=n_sims,
+        seed=seed,
+    )

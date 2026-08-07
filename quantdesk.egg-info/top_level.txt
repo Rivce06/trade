@@ -1,1 +1,6 @@
+backtest
 config
+data
+research
+risk
+strategies

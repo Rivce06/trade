@@ -39,6 +39,11 @@ def test_research_runner_emits_artifacts_in_timestamped_reports_dir(tmp_path: Pa
     assert result.run_dir.exists()
     assert (result.run_dir / "run_card.json").exists()
     assert (result.run_dir / "run_card.md").exists()
+    assert result.backtest.validation is not None
+    assert result.backtest.validation.walk_forward.n_splits >= 1
+    assert result.backtest.validation.walk_forward.per_split_metrics
+    assert result.backtest.validation.monte_carlo.n_sims > 0
+    assert result.backtest.validation.regime.per_regime_metrics
     assert any((result.run_dir).glob("tearsheet_*.html"))
 
 

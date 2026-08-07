@@ -8,12 +8,15 @@ Requires-Dist: pandas
 Requires-Dist: numpy
 Requires-Dist: pydantic>=2
 Requires-Dist: pydantic-settings
-Requires-Dist: backtesting.py
+Requires-Dist: backtesting
 Requires-Dist: vectorbt
 Requires-Dist: quantstats
 Requires-Dist: ib_async
 Requires-Dist: anthropic
 Requires-Dist: typer
+Requires-Dist: yfinance
+Requires-Dist: pyarrow
+Requires-Dist: backtrader
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"

@@ -2,6 +2,9 @@
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["backtest*", "risk*", "data*", "research*", "strategies*", "config*"]
+
 [project]
 name = "quantdesk"
 version = "0.1.0"
@@ -13,7 +16,7 @@ dependencies = [
   "numpy",
   "pydantic>=2",
   "pydantic-settings",
-  "backtesting.py",
+  "backtesting",
   "vectorbt",
   "quantstats",
   "ib_async",

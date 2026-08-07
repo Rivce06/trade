@@ -2,12 +2,15 @@ pandas
 numpy
 pydantic>=2
 pydantic-settings
-backtesting.py
+backtesting
 vectorbt
 quantstats
 ib_async
 anthropic
 typer
+yfinance
+pyarrow
+backtrader
 
 [dev]
 pytest

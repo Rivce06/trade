@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from backtest.validation.schemas import ValidationSummary
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,7 @@ class BacktestResult:
     trades: pd.DataFrame
     metrics: dict[str, float]
     config_used: BacktestConfig
+    validation: ValidationSummary | None = None
 
 
 @dataclass(frozen=True)
