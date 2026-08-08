@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import math
 
 from research.runner import ResearchRunner, ResearchReportResult, run_research
 from tests.conftest import make_ohlcv
@@ -19,6 +20,14 @@ class DummyProvider:
     def get_multiple(self, symbols: list[str], start: date, end: date, interval: str = "1d") -> dict[str, pd.DataFrame]:
         return {symbol: self.frames[symbol].copy() for symbol in symbols}
 
+def dicts_equal_with_nan(a: dict, b: dict) -> bool:
+    assert a.keys() == b.keys()
+    for key in a:
+        if isinstance(a[key], float) and math.isnan(a[key]):
+            assert math.isnan(b[key]), f"{key}: {a[key]} vs {b[key]}"
+        else:
+            assert a[key] == b[key], f"{key}: {a[key]} vs {b[key]}"
+    return True
 
 def test_research_runner_emits_artifacts_in_timestamped_reports_dir(tmp_path: Path) -> None:
     provider = DummyProvider(
@@ -97,4 +106,4 @@ def test_run_research_returns_reproducible_run_metadata() -> None:
 
     assert result_a.strategy_name == result_b.strategy_name
     assert result_a.run_dir.name != result_b.run_dir.name
-    assert result_a.backtest.metrics == result_b.backtest.metrics
+    assert dicts_equal_with_nan(result_a.backtest.metrics, result_b.backtest.metrics)
