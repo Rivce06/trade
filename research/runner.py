@@ -102,7 +102,9 @@ class ResearchRunner:
             max_gross_exposure=1.0,
         )
         order = ProposedOrder(symbol=symbols[0], side="buy", quantity=1, notional=1.0)
-        pretrade_check(order, mandate)
+        check = pretrade_check(order, mandate)
+        if not check.approved:
+            raise RuntimeError(f"Pre-trade risk check failed: {check.reasons}")
 
         config = self._build_config(start=start, end=end)
         backtest = run_backtest(strategy=strategy, data=data, config=config)
@@ -178,7 +180,9 @@ class ResearchRunner:
             )
 
         order = ProposedOrder(symbol=symbols[0], side="buy", quantity=1, notional=1.0)
-        pretrade_check(order, mandate)
+        check = pretrade_check(order, mandate)
+        if not check.approved:
+            raise RuntimeError(f"Pre-trade risk check failed: {check.reasons}")
 
         config = self._build_config(start=start, end=end)
         backtest = run_backtest(strategy=strategy, data=data, config=config)

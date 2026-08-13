@@ -19,4 +19,10 @@ def test_bootstrap_mean_converges_to_input_mean() -> None:
     trade_returns = pd.Series([0.01, -0.02, 0.04, 0.03, -0.01, 0.02], name="return")
     result = monte_carlo_resample(trade_returns, n_sims=1000, seed=42)
 
-    assert abs(result.distribution.mean() - trade_returns.mean()) < 0.5
+    n_obs = len(trade_returns)
+    expected_compounded_growth = (1.0 + trade_returns.mean()) ** n_obs
+
+    assert len(result.distribution) == 1000
+    assert result.distribution.nunique() > 1  # genuinely independent paths, not the old repeated-mean bug
+    assert abs(result.distribution.mean() - expected_compounded_growth) < 0.5
+    assert 0.0 <= result.prob_of_loss <= 1.0

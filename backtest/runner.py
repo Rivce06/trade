@@ -33,7 +33,19 @@ def run_backtest(
     weights_df = weights.unstack("symbol").reindex(returns_df.index).fillna(0.0)
     weights_shifted = weights_df.shift(1).fillna(0.0)
 
-    portfolio_returns = (weights_shifted * returns_df).sum(axis=1).fillna(0.0)
+    # Turnover: how much each symbol's position changed day-over-day.
+    # The first day's turnover equals the initial position size itself,
+    # since it represents entering from flat.
+    turnover = weights_shifted.diff().abs().sum(axis=1)
+    turnover.iloc[0] = weights_shifted.iloc[0].abs().sum()
+    turnover = turnover.fillna(0.0)
+
+    cost_bps = config.commission_bps + config.slippage_bps
+    transaction_costs = turnover * (cost_bps / 10_000.0)
+
+    portfolio_returns = (
+        (weights_shifted * returns_df).sum(axis=1).fillna(0.0) - transaction_costs
+    )
     equity_curve = config.initial_capital * (1.0 + portfolio_returns).cumprod()
     equity_curve.name = "equity"
 
